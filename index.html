@@ -3,38 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temporary Email - 1secmail</title>
+    <title>Upload to Telegram</title>
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9086217586826237"
+        crossorigin="anonymous"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
+            padding: 20px;
         }
-        #email {
-            font-weight: bold;
-            color: blue;
-        }
-        .email-box {
-            margin-top: 20px;
+        input, button {
+            margin: 10px;
             padding: 10px;
-            border: 1px solid #ccc;
-            display: inline-block;
         }
     </style>
 </head>
 <body>
 
-    <h1>Temporary Email Generator</h1>
-    <p>Your temporary email:</p>
-    
-    <div class="email-box">
-        <p id="email">your-email@1secmail.com</p>
-    </div>
-    
-    <br><br>
+    <h2>Upload File to Telegram Storage</h2>
 
-    <a id="inboxLink" href="https://www.1secmail.com/?login=your-email&domain=1secmail.com" target="_blank">
-        <button>Check Inbox</button>
-    </a>
+    <!-- File Input -->
+    <input type="file" id="fileInput"><br>
+    
+    <!-- Upload Button -->
+    <button onclick="uploadToTelegram()">Upload to Telegram</button>
+
+    <!-- Status Message -->
+    <p id="status"></p>
+
+    <!-- Google AdSense Ad -->
+    <ins class="adsbygoogle"
+        style="display:block"
+        data-ad-client="ca-pub-9086217586826237"
+        data-ad-slot="YOUR_AD_SLOT"
+        data-ad-format="auto"
+        data-full-width-responsive="true"></ins>
+    <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+
+    <script>
+        function uploadToTelegram() {
+            const fileInput = document.getElementById("fileInput");
+            const statusText = document.getElementById("status");
+
+            if (fileInput.files.length === 0) {
+                statusText.innerText = "❌ Please select a file!";
+                return;
+            }
+
+            let file = fileInput.files[0];
+            let fileName = encodeURIComponent(file.name);
+
+            // Open Telegram saved messages link
+            let telegramLink = `https://t.me/share/url?url=${fileName}`;
+            window.open(telegramLink, "_blank");
+
+            statusText.innerText = "✅ Open Telegram and send your file!";
+        }
+    </script>
 
 </body>
 </html>
