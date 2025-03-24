@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temporary Email - 1secmail</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #email {
+            font-weight: bold;
+            color: blue;
+        }
+        .email-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Temporary Email Generator</h1>
+    <p>Your temporary email:</p>
+    <p id="email">Generating...</p>
+    <button onclick="fetchEmails()">Check Inbox</button>
+    <div id="emails"></div>
+
+    <script>
+        let emailUser;
+        let emailDomain;
+        let emailAddress;
+
+        // Generate a random email
+        function generateEmail() {
+            let chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let name = '';
+            for (let i = 0; i < 10; i++) {
+                name += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            emailUser = name;
+            emailDomain = '1secmail.com';
+            emailAddress = `${emailUser}@${emailDomain}`;
+            document.getElementById('email').innerText = emailAddress;
+        }
+
+        // Fetch emails from 1secmail API
+        function fetchEmails() {
+            fetch(`https://www.1secmail.com/api/v1/?action=getMessages&login=${emailUser}&domain=${emailDomain}`)
+                .then(response => response.json())
+                .then(data => {
+                    let emailsDiv = document.getElementById('emails');
+                    emailsDiv.innerHTML = ''; // Clear previous emails
+                    if (data.length === 0) {
+                        emailsDiv.innerHTML = '<p>No new emails.</p>';
+                    } else {
+                        data.forEach(email => {
+                            emailsDiv.innerHTML += `
+                                <div class="email-item">
+                                    <h3>${email.subject}</h3>
+                                    <p>From: ${email.from}</p>
+                                    <p>Date: ${email.date}</p>
+                                    <button onclick="readEmail(${email.id})">Read</button>
+                                </div>
+                            `;
+                        });
+                    }
+                })
+                .catch(error => console.error('Error fetching emails:', error));
+        }
+
+        // Read an email
+        function readEmail(emailId) {
+            fetch(`https://www.1secmail.com/api/v1/?action=readMessage&login=${emailUser}&domain=${emailDomain}&id=${emailId}`)
+                .then(response => response.json())
+                .then(email => {
+                    alert(`Subject: ${email.subject}\nFrom: ${email.from}\n\n${email.body}`);
+                })
+                .catch(error => console.error('Error reading email:', error));
+        }
+
+        // Generate an email when the page loads
+        generateEmail();
+    </script>
+
+</body>
+</html>
