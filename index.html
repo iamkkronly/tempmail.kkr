@@ -3,68 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload to Telegram</title>
-
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9086217586826237"
-        crossorigin="anonymous"></script>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        input, button {
-            margin: 10px;
-            padding: 10px;
-        }
-    </style>
+    <meta name="google-site-verification" content="YEcXEB8SDXy-ZzorhMOtipKg6gA8VH4AKy19RNxG6d8" />
+    <title>Temporary Email</title>
 </head>
 <body>
-
-    <h2>Upload File to Telegram Storage</h2>
-
-    <!-- File Input -->
-    <input type="file" id="fileInput"><br>
+    <h1>Free Temporary Email</h1>
     
-    <!-- Upload Button -->
-    <button onclick="uploadToTelegram()">Upload to Telegram</button>
-
-    <!-- Status Message -->
-    <p id="status"></p>
-
-    <!-- Google AdSense Ad -->
-    <ins class="adsbygoogle"
-        style="display:block"
-        data-ad-client="ca-pub-9086217586826237"
-        data-ad-slot="YOUR_AD_SLOT"
-        data-ad-format="auto"
-        data-full-width-responsive="true"></ins>
-    <script>
-        (adsbygoogle = window.adsbygoogle || []).push({});
-    </script>
+    <button onclick="generateEmail()">Generate Email</button>
+    <p>Email: <span id="email"></span></p>
+    <input type="text" id="email-box" readonly>
+    <p>Password: <span id="password"></span></p>
+    
+    <button onclick="checkInbox()">Check Inbox</button>
+    <pre id="messages"></pre>
 
     <script>
-        function uploadToTelegram() {
-            const fileInput = document.getElementById("fileInput");
-            const statusText = document.getElementById("status");
+        let accountId = "";
+        let token = "";
 
-            if (fileInput.files.length === 0) {
-                statusText.innerText = "❌ Please select a file!";
+        async function generateEmail() {
+            let domain = "mail.tm";
+            let username = Math.random().toString(36).substring(7) + "@" + domain;
+            let password = Math.random().toString(36).substring(7);
+
+            let registerResponse = await fetch("https://api.mail.tm/accounts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ address: username, password: password })
+            });
+
+            if (registerResponse.ok) {
+                let loginResponse = await fetch("https://api.mail.tm/token", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ address: username, password: password })
+                });
+
+                let loginData = await loginResponse.json();
+                token = loginData.token;
+                accountId = loginData.id;
+
+                document.getElementById("email").innerText = username;
+                document.getElementById("email-box").value = username;
+                document.getElementById("password").innerText = password;
+            } else {
+                alert("Error generating email. Try again.");
+            }
+        }
+
+        async function checkInbox() {
+            if (!token) {
+                alert("Generate an email first!");
                 return;
             }
 
-            let file = fileInput.files[0];
-            let fileName = encodeURIComponent(file.name);
+            let inboxResponse = await fetch("https://api.mail.tm/messages", {
+                headers: { "Authorization": "Bearer " + token }
+            });
 
-            // Open Telegram saved messages link
-            let telegramLink = `https://t.me/share/url?url=${fileName}`;
-            window.open(telegramLink, "_blank");
-
-            statusText.innerText = "✅ Open Telegram and send your file!";
+            let inboxData = await inboxResponse.json();
+            document.getElementById("messages").innerText = JSON.stringify(inboxData, null, 2);
         }
     </script>
-
 </body>
 </html>
