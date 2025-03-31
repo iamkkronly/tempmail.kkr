@@ -5,107 +5,156 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="YEcXEB8SDXy-ZzorhMOtipKg6gA8VH4AKy19RNxG6d8" />
     <title>Temporary Email Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        #email-container, #inbox {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        .message {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px;
+            text-align: left;
+            word-wrap: break-word;
+        }
+        .message a {
+            color: blue;
+            text-decoration: underline;
+            word-wrap: break-word;
+        }
+        .email-box {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px;
+            border: 1px solid #333;
+            display: inline-block;
+            background-color: #f9f9f9;
+        }
+    </style>
 </head>
 <body>
-    <h1>Free Temporary Email</h1>
 
-    <button onclick="generateEmail()">Generate Email</button>
-    <p>Email: <span id="email"></span></p>
-    <input type="text" id="email-box" readonly>
-    <p>Password (if needed): <span id="password"></span></p>
+    <h1>Temporary Email Generator</h1>
+    <button onclick="generateEmail()">Generate Temporary Email</button>
 
-    <button onclick="checkInbox()">Check Inbox</button>
-    <pre id="messages"></pre>
+    <div id="email-container"></div>
+    <button onclick="checkInbox()" style="display:none;" id="inbox-btn">Check Inbox</button>
+    
+    <div id="inbox"></div>
 
     <script>
-        let token = "";
-        let email = "";
+        const API_URL = "https://api.mail.tm";
+        let userEmail = "";
+        let userToken = "";
 
         async function generateEmail() {
-            let service = Math.floor(Math.random() * 3); // Random API selection
+            document.getElementById("email-container").innerHTML = "Generating...";
 
-            if (service === 0) {
-                await generateMailTm();
-            } else if (service === 1) {
-                await generateSecMail();
-            } else {
-                await generateTempMail();
-            }
-        }
+            try {
+                // Get available domain
+                const domainResp = await fetch(`${API_URL}/domains`);
+                const domainData = await domainResp.json();
+                const domain = domainData["hydra:member"][0]["domain"];
 
-        // 1. Mail.tm API
-        async function generateMailTm() {
-            let domain = "mail.tm";
-            let username = Math.random().toString(36).substring(7) + "@" + domain;
-            let password = Math.random().toString(36).substring(7);
+                userEmail = `${Date.now()}@${domain}`;
+                const password = "password123";
 
-            let registerResponse = await fetch("https://api.mail.tm/accounts", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ address: username, password: password })
-            });
-
-            if (registerResponse.ok) {
-                let loginResponse = await fetch("https://api.mail.tm/token", {
+                const response = await fetch(`${API_URL}/accounts`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ address: username, password: password })
+                    body: JSON.stringify({ address: userEmail, password })
                 });
 
-                let loginData = await loginResponse.json();
-                token = loginData.token;
-                email = username;
+                if (response.ok) {
+                    // Get token
+                    const loginResp = await fetch(`${API_URL}/token`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ address: userEmail, password })
+                    });
+                    const loginData = await loginResp.json();
+                    userToken = loginData.token;
 
-                document.getElementById("email").innerText = username;
-                document.getElementById("email-box").value = username;
-                document.getElementById("password").innerText = password;
-            } else {
-                alert("Mail.tm failed. Trying another service...");
-                await generateSecMail();
+                    document.getElementById("email-container").innerHTML = `
+                        <p>📩 Your Temporary Email:</p>
+                        <div class="email-box">${userEmail}</div>
+                        <p>(Copy & use this email)</p>
+                    `;
+                    document.getElementById("inbox-btn").style.display = "inline-block";
+                } else {
+                    document.getElementById("email-container").innerHTML = "❌ Failed to generate an email.";
+                }
+            } catch (error) {
+                document.getElementById("email-container").innerHTML = "❌ Error connecting to the server.";
             }
         }
 
-        // 2. 1SecMail API
-        async function generateSecMail() {
-            let domains = ["1secmail.com", "1secmail.net", "1secmail.org"];
-            let username = Math.random().toString(36).substring(7);
-            let domain = domains[Math.floor(Math.random() * domains.length)];
-            email = username + "@" + domain;
-
-            document.getElementById("email").innerText = email;
-            document.getElementById("email-box").value = email;
-            document.getElementById("password").innerText = "Not required";
-
-            token = username; // No real token needed
-        }
-
-        // 3. Temp-Mail API (Read-Only, No Account Creation)
-        async function generateTempMail() {
-            let response = await fetch("https://www.1secmail.com/api/v1/?action=genRandomMailbox");
-            let data = await response.json();
-            email = data[0];
-
-            document.getElementById("email").innerText = email;
-            document.getElementById("email-box").value = email;
-            document.getElementById("password").innerText = "Not required";
-
-            token = email.split("@")[0]; // No real token needed
-        }
-
-        // Check Inbox (Mail.tm Only)
         async function checkInbox() {
-            if (!token) {
+            if (!userToken) {
                 alert("Generate an email first!");
                 return;
             }
 
-            let inboxResponse = await fetch("https://api.mail.tm/messages", {
-                headers: { "Authorization": "Bearer " + token }
-            });
+            document.getElementById("inbox").innerHTML = "Checking inbox...";
 
-            let inboxData = await inboxResponse.json();
-            document.getElementById("messages").innerText = JSON.stringify(inboxData, null, 2);
+            try {
+                const response = await fetch(`${API_URL}/messages`, {
+                    headers: { "Authorization": `Bearer ${userToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const messages = data["hydra:member"];
+
+                    if (messages.length === 0) {
+                        document.getElementById("inbox").innerHTML = "<p>📭 Inbox is empty!</p>";
+                        return;
+                    }
+
+                    let inboxHTML = "";
+                    for (const msg of messages) {
+                        const msgResp = await fetch(`${API_URL}/messages/${msg.id}`, {
+                            headers: { "Authorization": `Bearer ${userToken}` }
+                        });
+                        const fullMsg = await msgResp.json();
+
+                        const formattedBody = formatLinks(fullMsg.text || "No text content");
+
+                        inboxHTML += `
+                            <div class="message">
+                                <p><strong>📧 From:</strong> ${fullMsg.from.address}</p>
+                                <p><strong>📜 Subject:</strong> ${fullMsg.subject}</p>
+                                <p><strong>📩 Message:</strong> ${formattedBody}</p>
+                            </div>
+                        `;
+                    }
+
+                    document.getElementById("inbox").innerHTML = inboxHTML;
+                } else {
+                    document.getElementById("inbox").innerHTML = "❌ Failed to fetch inbox.";
+                }
+            } catch (error) {
+                document.getElementById("inbox").innerHTML = "❌ Error fetching messages.";
+            }
+        }
+
+        // Function to detect and convert URLs into clickable links
+        function formatLinks(text) {
+            const urlPattern = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlPattern, (url) => {
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+            });
         }
     </script>
+
 </body>
 </html>
