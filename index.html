@@ -4,24 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="YEcXEB8SDXy-ZzorhMOtipKg6gA8VH4AKy19RNxG6d8" />
-    <title>Temporary Email</title>
+    <title>Temporary Email Generator</title>
 </head>
 <body>
     <h1>Free Temporary Email</h1>
-    
+
     <button onclick="generateEmail()">Generate Email</button>
     <p>Email: <span id="email"></span></p>
     <input type="text" id="email-box" readonly>
-    <p>Password: <span id="password"></span></p>
-    
+    <p>Password (if needed): <span id="password"></span></p>
+
     <button onclick="checkInbox()">Check Inbox</button>
     <pre id="messages"></pre>
 
     <script>
-        let accountId = "";
         let token = "";
+        let email = "";
 
         async function generateEmail() {
+            let service = Math.floor(Math.random() * 3); // Random API selection
+
+            if (service === 0) {
+                await generateMailTm();
+            } else if (service === 1) {
+                await generateSecMail();
+            } else {
+                await generateTempMail();
+            }
+        }
+
+        // 1. Mail.tm API
+        async function generateMailTm() {
             let domain = "mail.tm";
             let username = Math.random().toString(36).substring(7) + "@" + domain;
             let password = Math.random().toString(36).substring(7);
@@ -41,16 +54,45 @@
 
                 let loginData = await loginResponse.json();
                 token = loginData.token;
-                accountId = loginData.id;
+                email = username;
 
                 document.getElementById("email").innerText = username;
                 document.getElementById("email-box").value = username;
                 document.getElementById("password").innerText = password;
             } else {
-                alert("Error generating email. Try again.");
+                alert("Mail.tm failed. Trying another service...");
+                await generateSecMail();
             }
         }
 
+        // 2. 1SecMail API
+        async function generateSecMail() {
+            let domains = ["1secmail.com", "1secmail.net", "1secmail.org"];
+            let username = Math.random().toString(36).substring(7);
+            let domain = domains[Math.floor(Math.random() * domains.length)];
+            email = username + "@" + domain;
+
+            document.getElementById("email").innerText = email;
+            document.getElementById("email-box").value = email;
+            document.getElementById("password").innerText = "Not required";
+
+            token = username; // No real token needed
+        }
+
+        // 3. Temp-Mail API (Read-Only, No Account Creation)
+        async function generateTempMail() {
+            let response = await fetch("https://www.1secmail.com/api/v1/?action=genRandomMailbox");
+            let data = await response.json();
+            email = data[0];
+
+            document.getElementById("email").innerText = email;
+            document.getElementById("email-box").value = email;
+            document.getElementById("password").innerText = "Not required";
+
+            token = email.split("@")[0]; // No real token needed
+        }
+
+        // Check Inbox (Mail.tm Only)
         async function checkInbox() {
             if (!token) {
                 alert("Generate an email first!");
